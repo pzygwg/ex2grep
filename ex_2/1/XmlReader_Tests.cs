@@ -67,6 +67,7 @@ namespace XXEExamples.Tests
                 {
                     XmlReaderSettings settings = new XmlReaderSettings();
                     settings.DtdProcessing = DtdProcessing.Prohibit;
+                    settings.XmlResolver = null;
                     settings.MaxCharactersFromEntities = 6000;
 
                     using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
@@ -74,11 +75,11 @@ namespace XXEExamples.Tests
                         XmlReader reader = XmlReader.Create(stream, settings);
 
                         var xmlDocument = new XmlDocument();
-                        xmlDocument.XmlResolver = new XmlUrlResolver();
+                        xmlDocument.XmlResolver = null;
                         xmlDocument.Load(reader);
                         return xmlDocument.InnerText;
                     }
-                }, true);
+                }, false);
             });
 
             Assert.IsTrue(exception.Message.StartsWith("For security reasons DTD is prohibited in this XML document."));
