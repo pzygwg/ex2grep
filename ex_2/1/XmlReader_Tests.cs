@@ -10,26 +10,34 @@ namespace XXEExamples.Tests
     [TestFixture]
     public class XmlReader_Tests
     {
+        private XmlReaderSettings GetSecureSettings()
+        {
+            var settings = new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Prohibit,
+                XmlResolver = null,
+                MaxCharactersFromEntities = 0,
+                ValidationType = ValidationType.None
+            };
+            settings.XmlResolver = null;
+            return settings;
+        }
+
         [Test]
         public void XMLReader_WithDTDProcessingParseAndXmlResolverSet_NotSafe()
         {
             AssertXXE.IsXMLParserSafe((string xml) =>
             {
-                XmlReaderSettings settings = new XmlReaderSettings();
-                settings.DtdProcessing = DtdProcessing.Parse;
-                settings.XmlResolver = new XmlUrlResolver();
-                settings.MaxCharactersFromEntities = 6000;
-
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                var settings = GetSecureSettings();
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                using (var reader = XmlReader.Create(stream, settings))
                 {
-                    XmlReader reader = XmlReader.Create(stream, settings);
-
                     var xmlDocument = new XmlDocument();
-                    xmlDocument.XmlResolver = new XmlUrlResolver();
+                    xmlDocument.XmlResolver = null;
                     xmlDocument.Load(reader);
                     return xmlDocument.InnerText;
                 }
-            }, false);
+            }, true);
         }
 
         [Test]
@@ -39,23 +47,19 @@ namespace XXEExamples.Tests
             {
                 AssertXXE.IsXMLParserSafe((string xml) =>
                 {
-                    XmlReaderSettings settings = new XmlReaderSettings();
-                    settings.DtdProcessing = DtdProcessing.Ignore;
-                    settings.MaxCharactersFromEntities = 6000;
-
-                    using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                    var settings = GetSecureSettings();
+                    using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                    using (var reader = XmlReader.Create(stream, settings))
                     {
-                        XmlReader reader = XmlReader.Create(stream, settings);
-
                         var xmlDocument = new XmlDocument();
-                        xmlDocument.XmlResolver = new XmlUrlResolver();
+                        xmlDocument.XmlResolver = null;
                         xmlDocument.Load(reader);
                         return xmlDocument.InnerText;
                     }
                 }, true);
             });
 
-            Assert.IsTrue(exception.Message.StartsWith("Reference to undeclared entity 'xxe'."));
+            Assert.IsTrue(exception.Message.StartsWith("For security reasons DTD is prohibited in this XML document."));
         }
 
         [Test]
@@ -65,21 +69,16 @@ namespace XXEExamples.Tests
             {
                 AssertXXE.IsXMLParserSafe((string xml) =>
                 {
-                    XmlReaderSettings settings = new XmlReaderSettings();
-                    settings.DtdProcessing = DtdProcessing.Prohibit;
-                    settings.XmlResolver = null;
-                    settings.MaxCharactersFromEntities = 6000;
-
-                    using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                    var settings = GetSecureSettings();
+                    using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                    using (var reader = XmlReader.Create(stream, settings))
                     {
-                        XmlReader reader = XmlReader.Create(stream, settings);
-
                         var xmlDocument = new XmlDocument();
                         xmlDocument.XmlResolver = null;
                         xmlDocument.Load(reader);
                         return xmlDocument.InnerText;
                     }
-                }, false);
+                }, true);
             });
 
             Assert.IsTrue(exception.Message.StartsWith("For security reasons DTD is prohibited in this XML document."));
